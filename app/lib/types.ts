@@ -3,15 +3,10 @@ export interface EventMeta {
   active: boolean;
 }
 
-export interface CatalogItem {
+export interface CatalogPageItem {
   id: string;
-  name: string;
   brand: string;
   event: string;
-  price: number;
-  fee: number;
-  status: 'ready' | 'limited' | 'sold_out';
+  pageNumber: number;
   imageUrl: string;
-  pageNumber?: number;
-  notes?: string;
 }
