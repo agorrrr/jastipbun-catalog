@@ -2,12 +2,21 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { CatalogItem } from '../lib/types';
-import { getAllCatalog, saveManyCatalogItems, deleteCatalogItem, clearCatalog } from '../lib/storage';
+import { CatalogItem, EventMeta } from '../lib/types';
+import {
+  getAllCatalog,
+  getEvents,
+  saveEvent,
+  toggleEventActive,
+  saveManyCatalogItems,
+  deleteCatalogItem,
+  clearCatalog
+} from '../lib/storage';
 
 interface DraftItem {
   id: string;
   pageNumber: number;
+  partIndex?: number;
   imageUrl: string;
   name: string;
   brand: string;
@@ -18,15 +27,26 @@ interface DraftItem {
   notes: string;
 }
 
+const DEFAULT_PIN = 'admin123';
+
 export default function AdminPage() {
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [inputPin, setInputPin] = useState('');
+  const [authError, setAuthError] = useState('');
+
+  // Catalog & Event state
   const [items, setItems] = useState<CatalogItem[]>([]);
+  const [events, setEvents] = useState<EventMeta[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form states
-  const [event, setEvent] = useState('');
+  const [selectedEventName, setSelectedEventName] = useState('');
+  const [newEventName, setNewEventName] = useState('');
   const [brand, setBrand] = useState('');
   const [defaultFee, setDefaultFee] = useState<number>(25000);
   const [defaultPrice, setDefaultPrice] = useState<number>(150000);
+  const [splitMode, setSplitMode] = useState<'1' | '2' | '4'>('1');
 
   // PDF processing states
   const [isProcessing, setIsProcessing] = useState(false);
@@ -35,22 +55,63 @@ export default function AdminPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadCatalog();
+    const auth = sessionStorage.getItem('jastipbun_auth');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+      loadData();
+    }
   }, []);
 
-  async function loadCatalog() {
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (inputPin === DEFAULT_PIN) {
+      sessionStorage.setItem('jastipbun_auth', 'true');
+      setIsAuthenticated(true);
+      setAuthError('');
+      loadData();
+    } else {
+      setAuthError('PIN Admin salah. Default: admin123');
+    }
+  }
+
+  function handleLogout() {
+    sessionStorage.removeItem('jastipbun_auth');
+    setIsAuthenticated(false);
+    setInputPin('');
+  }
+
+  async function loadData() {
     setLoading(true);
-    const data = await getAllCatalog();
-    setItems(data);
+    const [catItems, evList] = await Promise.all([getAllCatalog(), getEvents()]);
+    setItems(catItems);
+    setEvents(evList);
+    if (evList.length > 0 && !selectedEventName) {
+      setSelectedEventName(evList[0].name);
+    }
     setLoading(false);
+  }
+
+  async function handleToggleEvent(name: string, currentStatus: boolean) {
+    await toggleEventActive(name, !currentStatus);
+    await loadData();
+  }
+
+  async function handleAddNewEvent() {
+    if (!newEventName.trim()) return;
+    const clean = newEventName.trim();
+    await saveEvent({ name: clean, active: true });
+    setNewEventName('');
+    await loadData();
+    setSelectedEventName(clean);
   }
 
   async function handlePdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!brand.trim() || !event.trim()) {
-      alert('Isi nama Event dan Brand dulu sebelum upload PDF!');
+    const targetEvent = selectedEventName.trim();
+    if (!brand.trim() || !targetEvent) {
+      alert('Pilih Event dan isi nama Brand dulu sebelum upload PDF!');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -75,10 +136,8 @@ export default function AdminPage() {
       const extracted: DraftItem[] = [];
 
       for (let i = 1; i <= numPages; i++) {
-        setProgressText(`Mengonversi halaman ${i} dari ${numPages}...`);
+        setProgressText(`Memproses halaman ${i} dari ${numPages}...`);
         const page = await pdf.getPage(i);
-
-        // Viewport scale 1.2 cukup tajam tapi tetap ringan
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -87,42 +146,86 @@ export default function AdminPage() {
 
         if (context) {
           await page.render({ canvasContext: context, viewport }).promise;
-          // Kompresi WebP/JPEG ringan kualitas 0.8
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
 
-          // Coba ambil teks halaman jika ada
-          let pageText = '';
-          try {
-            const textContent = await page.getTextContent();
-            pageText = textContent.items
-              .map((item: any) => item.str)
-              .filter((s: string) => s && s.trim().length > 1)
-              .slice(0, 5)
-              .join(' ');
-          } catch {
-            pageText = '';
+          if (splitMode === '1') {
+            // Full page
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            extracted.push({
+              id: `item-${Date.now()}-${i}`,
+              pageNumber: i,
+              imageUrl: dataUrl,
+              name: `${brand} - Produk Hal ${i}`,
+              brand: brand.trim(),
+              event: targetEvent,
+              price: defaultPrice,
+              fee: defaultFee,
+              status: 'ready',
+              notes: `Halaman ${i}`
+            });
+          } else if (splitMode === '2') {
+            // Bagi 2: Atas dan Bawah
+            const halfH = Math.floor(canvas.height / 2);
+            for (let part = 0; part < 2; part++) {
+              const partCanvas = document.createElement('canvas');
+              partCanvas.width = canvas.width;
+              partCanvas.height = halfH;
+              const pCtx = partCanvas.getContext('2d');
+              if (pCtx) {
+                pCtx.drawImage(canvas, 0, part * halfH, canvas.width, halfH, 0, 0, canvas.width, halfH);
+                extracted.push({
+                  id: `item-${Date.now()}-${i}-${part + 1}`,
+                  pageNumber: i,
+                  partIndex: part + 1,
+                  imageUrl: partCanvas.toDataURL('image/jpeg', 0.8),
+                  name: `${brand} - Produk Hal ${i} (#${part + 1})`,
+                  brand: brand.trim(),
+                  event: targetEvent,
+                  price: defaultPrice,
+                  fee: defaultFee,
+                  status: 'ready',
+                  notes: `Halaman ${i} bagian ${part === 0 ? 'atas' : 'bawah'}`
+                });
+              }
+            }
+          } else if (splitMode === '4') {
+            // Bagi 4: Grid 2x2
+            const halfW = Math.floor(canvas.width / 2);
+            const halfH = Math.floor(canvas.height / 2);
+            let partCount = 1;
+            for (let row = 0; row < 2; row++) {
+              for (let col = 0; col < 2; col++) {
+                const partCanvas = document.createElement('canvas');
+                partCanvas.width = halfW;
+                partCanvas.height = halfH;
+                const pCtx = partCanvas.getContext('2d');
+                if (pCtx) {
+                  pCtx.drawImage(canvas, col * halfW, row * halfH, halfW, halfH, 0, 0, halfW, halfH);
+                  extracted.push({
+                    id: `item-${Date.now()}-${i}-${partCount}`,
+                    pageNumber: i,
+                    partIndex: partCount,
+                    imageUrl: partCanvas.toDataURL('image/jpeg', 0.8),
+                    name: `${brand} - Item Hal ${i} (#${partCount})`,
+                    brand: brand.trim(),
+                    event: targetEvent,
+                    price: defaultPrice,
+                    fee: defaultFee,
+                    status: 'ready',
+                    notes: `Halaman ${i} kuadran ${partCount}`
+                  });
+                  partCount++;
+                }
+              }
+            }
           }
-
-          extracted.push({
-            id: `item-${Date.now()}-${i}`,
-            pageNumber: i,
-            imageUrl: dataUrl,
-            name: pageText.trim() ? `${brand} - ${pageText.substring(0, 35)}...` : `${brand} Item #${i}`,
-            brand: brand.trim(),
-            event: event.trim(),
-            price: defaultPrice,
-            fee: defaultFee,
-            status: 'ready',
-            notes: `Halaman ${i} dari katalog PDF`,
-          });
         }
       }
 
       setDrafts(extracted);
-      setProgressText(`Selesai! ${extracted.length} halaman berhasil diekstrak.`);
+      setProgressText(`Selesai! ${extracted.length} item berhasil dipotong.`);
     } catch (err: any) {
       console.error(err);
-      alert('Gagal membaca PDF: ' + err.message);
+      alert('Gagal memproses PDF: ' + err.message);
     } finally {
       setIsProcessing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -156,92 +259,223 @@ export default function AdminPage() {
 
     await saveManyCatalogItems(newItems);
     setDrafts([]);
-    await loadCatalog();
+    await loadData();
     alert(`${newItems.length} barang berhasil disimpan ke katalog publik!`);
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Hapus barang ini dari katalog?')) return;
     await deleteCatalogItem(id);
-    await loadCatalog();
+    await loadData();
   }
 
   async function handleClearAll() {
-    if (!confirm('Yakin ingin mengosongkan semua data katalog?')) return;
+    if (!confirm('Kosongkan semua data katalog dan event?')) return;
     await clearCatalog();
-    await loadCatalog();
+    await loadData();
+  }
+
+  // If not authenticated, show Login Screen
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-md mx-auto my-12 bg-white p-6 rounded-2xl border border-slate-200 shadow-md">
+        <div className="text-center space-y-2 mb-6">
+          <span className="w-12 h-12 rounded-xl bg-rose-600 text-white font-bold flex items-center justify-center text-lg shadow mx-auto">
+            JB
+          </span>
+          <h1 className="text-xl font-bold text-slate-900">Login Admin Jastipbun</h1>
+          <p className="text-xs text-slate-500">
+            Akses khusus pemilik untuk kelola status event, upload PDF, dan edit harga.
+          </p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              Masukkan PIN Admin
+            </label>
+            <input
+              type="password"
+              placeholder="Default: admin123"
+              value={inputPin}
+              onChange={(e) => setInputPin(e.target.value)}
+              className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              autoFocus
+            />
+            {authError && <p className="text-xs text-red-600 mt-1 font-medium">{authError}</p>}
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-lg shadow transition"
+          >
+            Masuk Panel Admin →
+          </button>
+        </form>
+
+        <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+          <Link href="/" className="text-xs text-slate-500 hover:text-slate-800">
+            ← Kembali ke Katalog Publik
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Admin Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Admin Katalog Jastip</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Panel Admin Jastipbun</h1>
           <p className="text-sm text-slate-500">
-            Upload PDF katalog brand/event. Sistem langsung konversi jadi item kartu foto ringan untuk pembeli.
+            Kelola event aktif/nonaktif, potong PDF multi-produk, dan atur harga jastip.
           </p>
         </div>
-        <Link
-          href="/"
-          className="inline-flex items-center text-sm font-semibold text-rose-600 hover:text-rose-700 gap-1"
-        >
-          ← Lihat Katalog Publik
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+          >
+            Lihat Katalog Publik
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-600"
+          >
+            Keluar Admin
+          </button>
+        </div>
       </div>
 
-      {/* Upload Box */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 text-xs font-bold flex items-center justify-center">1</span>
-          Upload & Ekstrak PDF Katalog
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Event Management Section (Active / Inactive Toggle) */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Nama Event *</label>
+            <h2 className="text-lg font-bold text-slate-800">Manajemen Status Event</h2>
+            <p className="text-xs text-slate-500">
+              Hanya event dengan status <strong>Aktif</strong> yang akan muncul di katalog publik pembeli.
+            </p>
+          </div>
+          {/* Add new event inline */}
+          <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="Contoh: Jakarta Sneaker Day 2026"
-              value={event}
-              onChange={(e) => setEvent(e.target.value)}
-              className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              placeholder="Nama event baru..."
+              value={newEventName}
+              onChange={(e) => setNewEventName(e.target.value)}
+              className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
+            <button
+              onClick={handleAddNewEvent}
+              className="text-xs bg-slate-900 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-800 transition"
+            >
+              + Tambah Event
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {events.map((ev) => (
+            <div
+              key={ev.name}
+              className={`p-3 rounded-lg border flex items-center justify-between transition ${
+                ev.active
+                  ? 'bg-emerald-50/50 border-emerald-300'
+                  : 'bg-slate-50 border-slate-200 opacity-60'
+              }`}
+            >
+              <div>
+                <p className="font-bold text-xs text-slate-800">{ev.name}</p>
+                <span className={`text-[10px] font-semibold ${ev.active ? 'text-emerald-700' : 'text-slate-500'}`}>
+                  {ev.active ? '● Aktif (Tampil)' : '○ Nonaktif (Disembunyikan)'}
+                </span>
+              </div>
+              <button
+                onClick={() => handleToggleEvent(ev.name, ev.active)}
+                className={`text-xs font-bold px-3 py-1 rounded-md transition ${
+                  ev.active
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    : 'bg-slate-300 text-slate-700 hover:bg-slate-400'
+                }`}
+              >
+                {ev.active ? 'Nonaktifkan' : 'Aktifkan'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* PDF Upload & Extraction Section */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <span>Upload & Potong Katalog PDF</span>
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Pilih Event *</label>
+            <select
+              value={selectedEventName}
+              onChange={(e) => setSelectedEventName(e.target.value)}
+              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+            >
+              {events.map((e) => (
+                <option key={e.name} value={e.name}>
+                  {e.name} {e.active ? '(Aktif)' : '(Nonaktif)'}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Brand *</label>
             <input
               type="text"
-              placeholder="Contoh: Uniqlo, Pop Mart, Zara"
+              placeholder="Contoh: Uniqlo, Pop Mart"
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
-              className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Default Harga Barang (Rp)</label>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              Cara Potong Per Halaman
+            </label>
+            <select
+              value={splitMode}
+              onChange={(e) => setSplitMode(e.target.value as any)}
+              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white font-semibold text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+            >
+              <option value="1">1 Produk (Full 1 Halaman)</option>
+              <option value="2">2 Produk (Atas & Bawah)</option>
+              <option value="4">4 Produk (Grid 2x2)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Default Harga (Rp)</label>
             <input
               type="number"
               value={defaultPrice}
               onChange={(e) => setDefaultPrice(Number(e.target.value))}
-              className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Default Jastip Fee (Rp)</label>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Default Fee Jastip (Rp)</label>
             <input
               type="number"
               value={defaultFee}
               onChange={(e) => setDefaultFee(Number(e.target.value))}
-              className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
           </div>
         </div>
 
-        {/* File drop zone */}
+        {/* File Drop zone */}
         <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition cursor-pointer relative">
           <input
             ref={fileInputRef}
@@ -252,37 +486,36 @@ export default function AdminPage() {
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
           />
           <div className="space-y-2 pointer-events-none">
-            <svg className="w-12 h-12 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-10 h-10 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <p className="text-sm font-semibold text-slate-700">
-              {isProcessing ? progressText : 'Klik atau drag & drop file PDF katalog ke sini'}
+              {isProcessing ? progressText : 'Klik atau seret file PDF katalog ke sini'}
             </p>
             <p className="text-xs text-slate-500">
-              PDF akan otomatis dipotong per halaman menjadi gambar JPEG terkompresi tanpa membebani browser pembeli.
+              Mode potong aktif: <strong>{splitMode === '1' ? '1 halaman = 1 kartu' : splitMode === '2' ? '1 halaman = 2 kartu (atas & bawah)' : '1 halaman = 4 kartu (grid 2x2)'}</strong>.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Drafts Review Section */}
+      {/* Review Extracted Items */}
       {drafts.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 text-xs font-bold flex items-center justify-center">2</span>
-                Review Hasil Ekstrak ({drafts.length} Item)
+              <h2 className="text-lg font-bold text-slate-800">
+                Review Hasil Potongan ({drafts.length} Item)
               </h2>
               <p className="text-xs text-slate-500">
-                Sesuaikan nama, harga, dan hapus halaman yang bukan produk (cover, ketentuan).
+                Cek tiap item, sesuaikan nama/harga, dan hapus potongan yang bukan produk sebelum disimpan.
               </p>
             </div>
             <button
               onClick={saveAllDrafts}
               className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-lg shadow transition"
             >
-              Simpan Semua ke Katalog Publik →
+              Simpan ke Katalog Publik →
             </button>
           </div>
 
@@ -296,11 +529,11 @@ export default function AdminPage() {
                     className="w-full h-full object-contain bg-white"
                   />
                   <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded font-mono">
-                    Hal {draft.pageNumber}
+                    Hal {draft.pageNumber} {draft.partIndex ? `(#${draft.partIndex})` : ''}
                   </span>
                   <button
                     onClick={() => removeDraft(idx)}
-                    title="Hapus item ini"
+                    title="Hapus item"
                     className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold hover:bg-red-700 shadow"
                   >
                     ✕
@@ -325,7 +558,7 @@ export default function AdminPage() {
                         type="number"
                         value={draft.price}
                         onChange={(e) => updateDraft(idx, 'price', Number(e.target.value))}
-                        className="w-full border border-slate-300 rounded px-2 py-1 bg-white"
+                        className="w-full border border-slate-300 rounded px-2 py-1 bg-white font-mono"
                       />
                     </div>
                     <div>
@@ -334,7 +567,7 @@ export default function AdminPage() {
                         type="number"
                         value={draft.fee}
                         onChange={(e) => updateDraft(idx, 'fee', Number(e.target.value))}
-                        className="w-full border border-slate-300 rounded px-2 py-1 bg-white"
+                        className="w-full border border-slate-300 rounded px-2 py-1 bg-white font-mono text-rose-600"
                       />
                     </div>
                   </div>
@@ -358,25 +591,25 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Existing Catalog Items */}
+      {/* Existing Items Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-800">Daftar Katalog Aktif ({items.length} Item)</h2>
-            <p className="text-xs text-slate-500">Semua barang yang saat ini tampil di dashboard pelanggan Jastipbun.</p>
+            <h2 className="text-lg font-bold text-slate-800">Semua Item Katalog ({items.length} Item)</h2>
+            <p className="text-xs text-slate-500">Daftar item tersimpan saat ini di sistem.</p>
           </div>
           <button
             onClick={handleClearAll}
             className="text-xs text-red-600 hover:text-red-700 underline font-medium"
           >
-            Kosongkan Semua
+            Kosongkan Database
           </button>
         </div>
 
         {loading ? (
-          <p className="text-sm text-slate-500 py-6 text-center">Memuat data katalog...</p>
+          <p className="text-sm text-slate-500 py-6 text-center">Memuat item...</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-slate-500 py-6 text-center">Belum ada barang di katalog. Silakan upload PDF di atas.</p>
+          <p className="text-sm text-slate-500 py-6 text-center">Belum ada item di katalog.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-700 border-collapse">
@@ -387,7 +620,8 @@ export default function AdminPage() {
                   <th className="py-2.5 px-3">Brand</th>
                   <th className="py-2.5 px-3">Event</th>
                   <th className="py-2.5 px-3">Harga</th>
-                  <th className="py-2.5 px-3">Fee Jastip</th>
+                  <th className="py-2.5 px-3">Fee</th>
+                  <th className="py-2.5 px-3">Total</th>
                   <th className="py-2.5 px-3">Status</th>
                   <th className="py-2.5 px-3 text-right">Aksi</th>
                 </tr>
@@ -399,14 +633,13 @@ export default function AdminPage() {
                       <img src={it.imageUrl} alt={it.name} className="w-12 h-12 object-cover rounded bg-slate-100 border border-slate-200" />
                     </td>
                     <td className="py-2 px-3 font-semibold text-slate-900 max-w-[200px] truncate">{it.name}</td>
-                    <td className="py-2 px-3">
-                      <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-medium">
-                        {it.brand}
-                      </span>
-                    </td>
+                    <td className="py-2 px-3 font-medium text-slate-800">{it.brand}</td>
                     <td className="py-2 px-3 text-slate-600">{it.event}</td>
                     <td className="py-2 px-3 font-mono">Rp {it.price.toLocaleString('id-ID')}</td>
                     <td className="py-2 px-3 font-mono text-rose-600">+Rp {it.fee.toLocaleString('id-ID')}</td>
+                    <td className="py-2 px-3 font-mono font-bold text-slate-900">
+                      Rp {(it.price + it.fee).toLocaleString('id-ID')}
+                    </td>
                     <td className="py-2 px-3">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         it.status === 'ready'

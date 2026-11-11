@@ -1,3 +1,8 @@
+export interface EventMeta {
+  name: string;
+  active: boolean;
+}
+
 export interface CatalogItem {
   id: string;
   name: string;
@@ -9,10 +14,4 @@ export interface CatalogItem {
   imageUrl: string;
   pageNumber?: number;
   notes?: string;
-}
-
-export interface CartItem {
-  item: CatalogItem;
-  qty: number;
-  variant?: string;
 }
