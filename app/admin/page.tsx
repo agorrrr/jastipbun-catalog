@@ -148,7 +148,6 @@ export default function AdminPage() {
           await page.render({ canvasContext: context, viewport }).promise;
 
           if (splitMode === '1') {
-            // Full page
             const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
             extracted.push({
               id: `item-${Date.now()}-${i}`,
@@ -163,7 +162,6 @@ export default function AdminPage() {
               notes: `Halaman ${i}`
             });
           } else if (splitMode === '2') {
-            // Bagi 2: Atas dan Bawah
             const halfH = Math.floor(canvas.height / 2);
             for (let part = 0; part < 2; part++) {
               const partCanvas = document.createElement('canvas');
@@ -188,7 +186,6 @@ export default function AdminPage() {
               }
             }
           } else if (splitMode === '4') {
-            // Bagi 4: Grid 2x2
             const halfW = Math.floor(canvas.width / 2);
             const halfH = Math.floor(canvas.height / 2);
             let partCount = 1;
@@ -222,7 +219,7 @@ export default function AdminPage() {
       }
 
       setDrafts(extracted);
-      setProgressText(`Selesai! ${extracted.length} item berhasil dipotong.`);
+      setProgressText(`Selesai! ${extracted.length} item berhasil diekstrak.`);
     } catch (err: any) {
       console.error(err);
       alert('Gagal memproses PDF: ' + err.message);
@@ -278,20 +275,22 @@ export default function AdminPage() {
   // If not authenticated, show Login Screen
   if (!isAuthenticated) {
     return (
-      <div className="max-w-md mx-auto my-12 bg-white p-6 rounded-2xl border border-slate-200 shadow-md">
+      <div className="max-w-md mx-auto my-12 bg-white p-6 rounded-2xl border border-cream-200 shadow-md">
         <div className="text-center space-y-2 mb-6">
-          <span className="w-12 h-12 rounded-xl bg-rose-600 text-white font-bold flex items-center justify-center text-lg shadow mx-auto">
-            JB
-          </span>
-          <h1 className="text-xl font-bold text-slate-900">Login Admin Jastipbun</h1>
-          <p className="text-xs text-slate-500">
+          <img
+            src="/logo.jpg"
+            alt="Logo Jastipbun"
+            className="w-16 h-16 rounded-full mx-auto border-2 border-rosebrand-500 shadow-xs"
+          />
+          <h1 className="text-xl font-bold text-espresso-900">Login Admin Jastipbun</h1>
+          <p className="text-xs text-espresso-700/60">
             Akses khusus pemilik untuk kelola status event, upload PDF, dan edit harga.
           </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-espresso-800 uppercase mb-1">
               Masukkan PIN Admin
             </label>
             <input
@@ -299,22 +298,22 @@ export default function AdminPage() {
               placeholder="Default: admin123"
               value={inputPin}
               onChange={(e) => setInputPin(e.target.value)}
-              className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full text-sm rounded-lg border border-cream-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-rosebrand-500 bg-cream-50/50"
               autoFocus
             />
-            {authError && <p className="text-xs text-red-600 mt-1 font-medium">{authError}</p>}
+            {authError && <p className="text-xs text-rosebrand-600 mt-1 font-bold">{authError}</p>}
           </div>
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-lg shadow transition"
+            className="w-full py-2.5 bg-rosebrand-500 hover:bg-rosebrand-600 text-white font-bold text-sm rounded-lg shadow-xs transition"
           >
             Masuk Panel Admin →
           </button>
         </form>
 
-        <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-          <Link href="/" className="text-xs text-slate-500 hover:text-slate-800">
+        <div className="mt-6 pt-4 border-t border-cream-200 text-center">
+          <Link href="/" className="text-xs text-espresso-700/70 hover:text-espresso-900 font-semibold">
             ← Kembali ke Katalog Publik
           </Link>
         </div>
@@ -325,50 +324,52 @@ export default function AdminPage() {
   return (
     <div className="space-y-8">
       {/* Admin Top Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Panel Admin Jastipbun</h1>
-          <p className="text-sm text-slate-500">
-            Kelola event aktif/nonaktif, potong PDF multi-produk, dan atur harga jastip.
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cream-200 pb-4">
+        <div className="flex items-center gap-3">
+          <img src="/logo.jpg" alt="Logo" className="w-10 h-10 rounded-full border border-rosebrand-500 shadow-xs" />
+          <div>
+            <h1 className="text-2xl font-bold text-espresso-900">Panel Admin Jastipbun</h1>
+            <p className="text-xs text-espresso-700/70">
+              Kelola status event aktif/nonaktif, potong PDF multi-produk, dan atur harga.
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+            className="text-xs font-bold text-rosebrand-600 hover:underline"
           >
             Lihat Katalog Publik
           </Link>
           <button
             onClick={handleLogout}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-600"
+            className="text-xs font-bold px-3 py-1.5 rounded-lg border border-cream-300 hover:bg-cream-200 text-espresso-800"
           >
             Keluar Admin
           </button>
         </div>
       </div>
 
-      {/* Event Management Section (Active / Inactive Toggle) */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+      {/* Event Management Section */}
+      <div className="bg-white rounded-xl border border-cream-200 shadow-xs p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cream-200 pb-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-800">Manajemen Status Event</h2>
-            <p className="text-xs text-slate-500">
-              Hanya event dengan status <strong>Aktif</strong> yang akan muncul di katalog publik pembeli.
+            <h2 className="text-lg font-bold text-espresso-900">Manajemen Status Event</h2>
+            <p className="text-xs text-espresso-700/70">
+              Hanya event dengan status <strong>Aktif</strong> yang akan tampil di katalog publik pembeli.
             </p>
           </div>
-          {/* Add new event inline */}
           <div className="flex items-center gap-2">
             <input
               type="text"
               placeholder="Nama event baru..."
               value={newEventName}
               onChange={(e) => setNewEventName(e.target.value)}
-              className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="text-xs border border-cream-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-rosebrand-500 bg-cream-50/50"
             />
             <button
               onClick={handleAddNewEvent}
-              className="text-xs bg-slate-900 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-800 transition"
+              className="text-xs bg-espresso-800 text-cream-50 font-bold px-3 py-1.5 rounded-lg hover:bg-espresso-900 transition"
             >
               + Tambah Event
             </button>
@@ -381,13 +382,13 @@ export default function AdminPage() {
               key={ev.name}
               className={`p-3 rounded-lg border flex items-center justify-between transition ${
                 ev.active
-                  ? 'bg-emerald-50/50 border-emerald-300'
-                  : 'bg-slate-50 border-slate-200 opacity-60'
+                  ? 'bg-emerald-50/70 border-emerald-300'
+                  : 'bg-cream-100/50 border-cream-200 opacity-60'
               }`}
             >
               <div>
-                <p className="font-bold text-xs text-slate-800">{ev.name}</p>
-                <span className={`text-[10px] font-semibold ${ev.active ? 'text-emerald-700' : 'text-slate-500'}`}>
+                <p className="font-bold text-xs text-espresso-900">{ev.name}</p>
+                <span className={`text-[10px] font-bold ${ev.active ? 'text-emerald-700' : 'text-espresso-700/60'}`}>
                   {ev.active ? '● Aktif (Tampil)' : '○ Nonaktif (Disembunyikan)'}
                 </span>
               </div>
@@ -396,7 +397,7 @@ export default function AdminPage() {
                 className={`text-xs font-bold px-3 py-1 rounded-md transition ${
                   ev.active
                     ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    : 'bg-slate-300 text-slate-700 hover:bg-slate-400'
+                    : 'bg-cream-300 text-espresso-800 hover:bg-cream-400'
                 }`}
               >
                 {ev.active ? 'Nonaktifkan' : 'Aktifkan'}
@@ -407,18 +408,16 @@ export default function AdminPage() {
       </div>
 
       {/* PDF Upload & Extraction Section */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <span>Upload & Potong Katalog PDF</span>
-        </h2>
+      <div className="bg-white rounded-xl border border-cream-200 shadow-xs p-6 space-y-6">
+        <h2 className="text-lg font-bold text-espresso-900">Upload & Potong Katalog PDF</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Pilih Event *</label>
+            <label className="block text-xs font-semibold text-espresso-800 uppercase mb-1">Pilih Event *</label>
             <select
               value={selectedEventName}
               onChange={(e) => setSelectedEventName(e.target.value)}
-              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full text-xs rounded-lg border border-cream-300 px-3 py-2 bg-cream-50/50 focus:outline-none focus:ring-2 focus:ring-rosebrand-500"
             >
               {events.map((e) => (
                 <option key={e.name} value={e.name}>
@@ -429,24 +428,24 @@ export default function AdminPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Brand *</label>
+            <label className="block text-xs font-semibold text-espresso-800 uppercase mb-1">Brand *</label>
             <input
               type="text"
               placeholder="Contoh: Uniqlo, Pop Mart"
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
-              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full text-xs rounded-lg border border-cream-300 px-3 py-2 bg-cream-50/50 focus:outline-none focus:ring-2 focus:ring-rosebrand-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-espresso-800 uppercase mb-1">
               Cara Potong Per Halaman
             </label>
             <select
               value={splitMode}
               onChange={(e) => setSplitMode(e.target.value as any)}
-              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white font-semibold text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full text-xs rounded-lg border border-cream-300 px-3 py-2 bg-cream-50/50 font-bold text-rosebrand-600 focus:outline-none focus:ring-2 focus:ring-rosebrand-500"
             >
               <option value="1">1 Produk (Full 1 Halaman)</option>
               <option value="2">2 Produk (Atas & Bawah)</option>
@@ -455,28 +454,28 @@ export default function AdminPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Default Harga (Rp)</label>
+            <label className="block text-xs font-semibold text-espresso-800 uppercase mb-1">Default Harga (Rp)</label>
             <input
               type="number"
               value={defaultPrice}
               onChange={(e) => setDefaultPrice(Number(e.target.value))}
-              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full text-xs rounded-lg border border-cream-300 px-3 py-2 bg-cream-50/50 focus:outline-none focus:ring-2 focus:ring-rosebrand-500 font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Default Fee Jastip (Rp)</label>
+            <label className="block text-xs font-semibold text-espresso-800 uppercase mb-1">Default Fee Jastip (Rp)</label>
             <input
               type="number"
               value={defaultFee}
               onChange={(e) => setDefaultFee(Number(e.target.value))}
-              className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full text-xs rounded-lg border border-cream-300 px-3 py-2 bg-cream-50/50 focus:outline-none focus:ring-2 focus:ring-rosebrand-500 font-mono"
             />
           </div>
         </div>
 
-        {/* File Drop zone */}
-        <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition cursor-pointer relative">
+        {/* Drop zone */}
+        <div className="border-2 border-dashed border-cream-300 rounded-xl p-8 text-center hover:bg-cream-50 transition cursor-pointer relative">
           <input
             ref={fileInputRef}
             type="file"
@@ -486,13 +485,13 @@ export default function AdminPage() {
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
           />
           <div className="space-y-2 pointer-events-none">
-            <svg className="w-10 h-10 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-10 h-10 text-rosebrand-500/60 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="text-sm font-semibold text-slate-700">
+            <p className="text-sm font-bold text-espresso-900">
               {isProcessing ? progressText : 'Klik atau seret file PDF katalog ke sini'}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-espresso-700/60">
               Mode potong aktif: <strong>{splitMode === '1' ? '1 halaman = 1 kartu' : splitMode === '2' ? '1 halaman = 2 kartu (atas & bawah)' : '1 halaman = 4 kartu (grid 2x2)'}</strong>.
             </p>
           </div>
@@ -501,19 +500,19 @@ export default function AdminPage() {
 
       {/* Review Extracted Items */}
       {drafts.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <div className="bg-white rounded-xl border border-cream-200 shadow-xs p-6 space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-800">
+              <h2 className="text-lg font-bold text-espresso-900">
                 Review Hasil Potongan ({drafts.length} Item)
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-espresso-700/70">
                 Cek tiap item, sesuaikan nama/harga, dan hapus potongan yang bukan produk sebelum disimpan.
               </p>
             </div>
             <button
               onClick={saveAllDrafts}
-              className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-lg shadow transition"
+              className="px-5 py-2.5 bg-rosebrand-500 hover:bg-rosebrand-600 text-white font-bold text-sm rounded-lg shadow-xs transition"
             >
               Simpan ke Katalog Publik →
             </button>
@@ -521,20 +520,20 @@ export default function AdminPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
             {drafts.map((draft, idx) => (
-              <div key={draft.id} className="border border-slate-200 rounded-lg overflow-hidden flex flex-col bg-slate-50">
-                <div className="relative aspect-[3/4] bg-slate-200">
+              <div key={draft.id} className="border border-cream-200 rounded-lg overflow-hidden flex flex-col bg-cream-50/50">
+                <div className="relative aspect-[3/4] bg-cream-100">
                   <img
                     src={draft.imageUrl}
                     alt={draft.name}
                     className="w-full h-full object-contain bg-white"
                   />
-                  <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded font-mono">
+                  <span className="absolute top-2 left-2 bg-espresso-900/80 text-white text-[10px] px-2 py-0.5 rounded font-mono">
                     Hal {draft.pageNumber} {draft.partIndex ? `(#${draft.partIndex})` : ''}
                   </span>
                   <button
                     onClick={() => removeDraft(idx)}
                     title="Hapus item"
-                    className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold hover:bg-red-700 shadow"
+                    className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold hover:bg-red-700 shadow-xs"
                   >
                     ✕
                   </button>
@@ -542,42 +541,42 @@ export default function AdminPage() {
 
                 <div className="p-3 space-y-2 flex-1 flex flex-col justify-between text-xs">
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-500">Nama Barang</label>
+                    <label className="block text-[10px] font-semibold text-espresso-700/70">Nama Barang</label>
                     <input
                       type="text"
                       value={draft.name}
                       onChange={(e) => updateDraft(idx, 'name', e.target.value)}
-                      className="w-full border border-slate-300 rounded px-2 py-1 font-medium bg-white"
+                      className="w-full border border-cream-300 rounded px-2 py-1 font-semibold bg-white"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-500">Harga (Rp)</label>
+                      <label className="block text-[10px] font-semibold text-espresso-700/70">Harga (Rp)</label>
                       <input
                         type="number"
                         value={draft.price}
                         onChange={(e) => updateDraft(idx, 'price', Number(e.target.value))}
-                        className="w-full border border-slate-300 rounded px-2 py-1 bg-white font-mono"
+                        className="w-full border border-cream-300 rounded px-2 py-1 bg-white font-mono"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-500">Fee (Rp)</label>
+                      <label className="block text-[10px] font-semibold text-espresso-700/70">Fee (Rp)</label>
                       <input
                         type="number"
                         value={draft.fee}
                         onChange={(e) => updateDraft(idx, 'fee', Number(e.target.value))}
-                        className="w-full border border-slate-300 rounded px-2 py-1 bg-white font-mono text-rose-600"
+                        className="w-full border border-cream-300 rounded px-2 py-1 bg-white font-mono text-rosebrand-600 font-bold"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-500">Status Stok</label>
+                    <label className="block text-[10px] font-semibold text-espresso-700/70">Status Stok</label>
                     <select
                       value={draft.status}
                       onChange={(e) => updateDraft(idx, 'status', e.target.value)}
-                      className="w-full border border-slate-300 rounded px-2 py-1 bg-white text-xs font-medium"
+                      className="w-full border border-cream-300 rounded px-2 py-1 bg-white text-xs font-bold"
                     >
                       <option value="ready">Ready</option>
                       <option value="limited">Sisa Dikit</option>
@@ -592,29 +591,29 @@ export default function AdminPage() {
       )}
 
       {/* Existing Items Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+      <div className="bg-white rounded-xl border border-cream-200 shadow-xs p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-800">Semua Item Katalog ({items.length} Item)</h2>
-            <p className="text-xs text-slate-500">Daftar item tersimpan saat ini di sistem.</p>
+            <h2 className="text-lg font-bold text-espresso-900">Semua Item Katalog ({items.length} Item)</h2>
+            <p className="text-xs text-espresso-700/70">Daftar item tersimpan saat ini di sistem.</p>
           </div>
           <button
             onClick={handleClearAll}
-            className="text-xs text-red-600 hover:text-red-700 underline font-medium"
+            className="text-xs text-red-600 hover:text-red-700 underline font-bold"
           >
             Kosongkan Database
           </button>
         </div>
 
         {loading ? (
-          <p className="text-sm text-slate-500 py-6 text-center">Memuat item...</p>
+          <p className="text-sm text-espresso-700/60 py-6 text-center">Memuat item...</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-slate-500 py-6 text-center">Belum ada item di katalog.</p>
+          <p className="text-sm text-espresso-700/60 py-6 text-center">Belum ada item di katalog.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700 border-collapse">
+            <table className="w-full text-left text-xs text-espresso-800 border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-semibold uppercase">
+                <tr className="border-b border-cream-200 bg-cream-50 text-espresso-700/70 font-bold uppercase">
                   <th className="py-2.5 px-3">Foto</th>
                   <th className="py-2.5 px-3">Nama Produk</th>
                   <th className="py-2.5 px-3">Brand</th>
@@ -626,18 +625,18 @@ export default function AdminPage() {
                   <th className="py-2.5 px-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-cream-100">
                 {items.map((it) => (
-                  <tr key={it.id} className="hover:bg-slate-50">
+                  <tr key={it.id} className="hover:bg-cream-50/60">
                     <td className="py-2 px-3">
-                      <img src={it.imageUrl} alt={it.name} className="w-12 h-12 object-cover rounded bg-slate-100 border border-slate-200" />
+                      <img src={it.imageUrl} alt={it.name} className="w-12 h-12 object-cover rounded bg-cream-100 border border-cream-200" />
                     </td>
-                    <td className="py-2 px-3 font-semibold text-slate-900 max-w-[200px] truncate">{it.name}</td>
-                    <td className="py-2 px-3 font-medium text-slate-800">{it.brand}</td>
-                    <td className="py-2 px-3 text-slate-600">{it.event}</td>
+                    <td className="py-2 px-3 font-bold text-espresso-900 max-w-[200px] truncate">{it.name}</td>
+                    <td className="py-2 px-3 font-semibold text-espresso-800">{it.brand}</td>
+                    <td className="py-2 px-3 text-espresso-700/80">{it.event}</td>
                     <td className="py-2 px-3 font-mono">Rp {it.price.toLocaleString('id-ID')}</td>
-                    <td className="py-2 px-3 font-mono text-rose-600">+Rp {it.fee.toLocaleString('id-ID')}</td>
-                    <td className="py-2 px-3 font-mono font-bold text-slate-900">
+                    <td className="py-2 px-3 font-mono text-rosebrand-600 font-bold">+Rp {it.fee.toLocaleString('id-ID')}</td>
+                    <td className="py-2 px-3 font-mono font-black text-espresso-900">
                       Rp {(it.price + it.fee).toLocaleString('id-ID')}
                     </td>
                     <td className="py-2 px-3">
@@ -645,8 +644,8 @@ export default function AdminPage() {
                         it.status === 'ready'
                           ? 'bg-emerald-100 text-emerald-800'
                           : it.status === 'limited'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-slate-200 text-slate-600'
+                          ? 'bg-goldbrand-100 text-espresso-900'
+                          : 'bg-cream-300 text-espresso-700'
                       }`}>
                         {it.status === 'ready' ? 'Ready' : it.status === 'limited' ? 'Sisa Dikit' : 'Habis'}
                       </span>
@@ -654,7 +653,7 @@ export default function AdminPage() {
                     <td className="py-2 px-3 text-right">
                       <button
                         onClick={() => handleDelete(it.id)}
-                        className="text-red-600 hover:text-red-800 font-semibold text-xs"
+                        className="text-red-600 hover:text-red-800 font-bold text-xs"
                       >
                         Hapus
                       </button>

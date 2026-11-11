@@ -4,8 +4,11 @@ import Script from 'next/script';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Jastipbun - Katalog Jastip Ringan & Praktis',
-  description: 'Katalog belanja jastip realtime per event dan brand. Cepat, hemat kuota, langsung pesan via WhatsApp.',
+  title: 'Jastipbun - Katalog Jastip Resmi',
+  description: 'Katalog belanja jastip realtime per event dan brand. Cepat, hemat kuota, langsung terhubung.',
+  icons: {
+    icon: '/logo.jpg',
+  },
 };
 
 export default function RootLayout({
@@ -21,36 +24,40 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
       </head>
-      <body className="min-h-screen bg-slate-50 text-slate-800 antialiased flex flex-col">
-        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-sm">
+      <body className="min-h-screen bg-cream-100 text-espresso-800 antialiased flex flex-col">
+        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-cream-200 px-4 py-3 shadow-xs">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-rose-600 text-white font-bold flex items-center justify-center text-sm shadow">
-                JB
-              </span>
+            <Link href="/" className="flex items-center gap-2.5">
+              <img
+                src="/logo.jpg"
+                alt="Logo Jastipbun"
+                className="w-10 h-10 rounded-full object-cover border-2 border-rosebrand-500 shadow-xs"
+              />
               <div>
-                <span className="font-extrabold text-lg tracking-tight text-slate-900 block leading-none">
+                <span className="font-extrabold text-lg tracking-tight text-espresso-900 block leading-tight">
                   Jastipbun
                 </span>
-                <span className="text-[11px] text-rose-600 font-medium">Katalog Event & Brand</span>
+                <span className="text-[11px] text-rosebrand-600 font-semibold tracking-wide">
+                  @jastipbunn_
+                </span>
               </div>
             </Link>
 
             <nav className="flex items-center gap-2">
               <Link
                 href="/"
-                className="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-100 transition text-slate-700"
+                className="px-3.5 py-1.5 rounded-full text-xs font-bold hover:bg-cream-200 transition text-espresso-800"
               >
                 Katalog
               </Link>
               <Link
                 href="/admin"
-                className="px-3 py-1.5 rounded-lg text-sm font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 transition border border-rose-200 flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-rosebrand-50 text-rosebrand-700 hover:bg-rosebrand-100 transition border border-rosebrand-200 flex items-center gap-1.5"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
                 </svg>
-                Upload PDF / Admin
+                Admin Panel
               </Link>
             </nav>
           </div>
@@ -60,8 +67,8 @@ export default function RootLayout({
           {children}
         </main>
 
-        <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} Jastipbun. Dibuat untuk kecepatan katalog jastip WhatsApp.</p>
+        <footer className="border-t border-cream-200 bg-white py-6 text-center text-xs text-espresso-700/60">
+          <p>© {new Date().getFullYear()} Jastipbun (@jastipbunn_). Katalog Event & Brand.</p>
         </footer>
       </body>
     </html>

@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 30, 41, 59;
-  --background-rgb: 248, 250, 252;
+  --foreground-rgb: 61, 35, 30; /* #3D231E Espresso Brown */
+  --background-rgb: 250, 242, 237; /* #FAF2ED Soft Cream */
 }
 
 body {

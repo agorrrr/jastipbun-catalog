@@ -87,23 +87,36 @@ export default function CatalogPage() {
 
   return (
     <div className="space-y-6 pb-16">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 rounded-2xl p-6 text-white shadow-md">
-        <div className="max-w-xl space-y-1.5">
-          <span className="inline-block bg-white/20 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-            Katalog Event Resmi
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
-            Katalog Jastipbun
-          </h1>
-          <p className="text-rose-100 text-xs sm:text-sm">
-            Daftar harga dan ketersediaan barang per event aktif. Transparan tanpa biaya tersembunyi.
-          </p>
+      {/* Header Banner - Matching Instagram @jastipbunn_ palette */}
+      <div className="bg-gradient-to-r from-rosebrand-500 via-[#DE7486] to-[#C95B6E] rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+          <div className="max-w-xl space-y-2">
+            <div className="inline-flex items-center gap-1.5 bg-cream-100/20 backdrop-blur-sm text-cream-50 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-goldbrand-500"></span>
+              Live Shopping & Jastip Hunting
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-white">
+              Katalog Titipan Jastipbun
+            </h1>
+            <p className="text-cream-100/90 text-xs sm:text-sm">
+              Katalog resmi per event & brand. Praktis, foto tajam dan ringan dibuka di handphone.
+            </p>
+          </div>
+
+          <a
+            href="https://www.instagram.com/jastipbunn_/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-md px-4 py-2 rounded-xl text-xs font-bold transition text-white border border-white/20 shadow-xs"
+          >
+            <img src="/logo.jpg" alt="IG" className="w-6 h-6 rounded-full border border-white" />
+            <span>@jastipbunn_ di Instagram →</span>
+          </a>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-4">
+      <div className="bg-white rounded-xl border border-cream-200 p-4 shadow-xs space-y-4">
         {/* Search Input */}
         <div className="relative">
           <input
@@ -111,10 +124,10 @@ export default function CatalogPage() {
             placeholder="Cari produk atau brand..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
+            className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-lg border border-cream-300 focus:outline-none focus:ring-2 focus:ring-rosebrand-500 bg-cream-50/50"
           />
           <svg
-            className="w-4 h-4 text-slate-400 absolute left-3 top-3"
+            className="w-4 h-4 text-espresso-700/40 absolute left-3 top-3.5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -125,7 +138,7 @@ export default function CatalogPage() {
 
         {/* Filter by Event */}
         <div>
-          <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+          <span className="block text-[11px] font-bold uppercase tracking-wider text-espresso-700/70 mb-2">
             Pilih Event
           </span>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -136,10 +149,10 @@ export default function CatalogPage() {
                   setSelectedEvent(ev);
                   setSelectedBrand('all');
                 }}
-                className={`text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap font-medium transition ${
+                className={`text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap font-bold transition ${
                   selectedEvent === ev
-                    ? 'bg-rose-600 text-white shadow'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'bg-rosebrand-500 text-white shadow-xs'
+                    : 'bg-cream-200 text-espresso-800 hover:bg-cream-300'
                 }`}
               >
                 {ev === 'all' ? 'Semua Event Aktif' : ev}
@@ -150,7 +163,7 @@ export default function CatalogPage() {
 
         {/* Filter by Brand */}
         <div>
-          <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+          <span className="block text-[11px] font-bold uppercase tracking-wider text-espresso-700/70 mb-2">
             Pilih Brand
           </span>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -158,10 +171,10 @@ export default function CatalogPage() {
               <button
                 key={br}
                 onClick={() => setSelectedBrand(br)}
-                className={`text-xs px-3 py-1 rounded-md whitespace-nowrap font-medium transition ${
+                className={`text-xs px-3 py-1 rounded-md whitespace-nowrap font-semibold transition ${
                   selectedBrand === br
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-espresso-800 text-cream-50'
+                    : 'bg-cream-100 text-espresso-700 hover:bg-cream-200'
                 }`}
               >
                 {br === 'all' ? 'Semua Brand' : br}
@@ -173,10 +186,10 @@ export default function CatalogPage() {
 
       {/* Main Content: Grouped by Event & Brand */}
       {loading ? (
-        <div className="py-16 text-center text-slate-400 text-sm">Memuat katalog...</div>
+        <div className="py-16 text-center text-espresso-700/50 text-sm">Memuat katalog...</div>
       ) : groupedData.size === 0 ? (
-        <div className="py-16 text-center bg-white rounded-xl border border-slate-200 p-8 space-y-3">
-          <p className="text-slate-600 text-sm font-semibold">
+        <div className="py-16 text-center bg-white rounded-xl border border-cream-200 p-8 space-y-3">
+          <p className="text-espresso-800 text-sm font-semibold">
             Tidak ada barang aktif yang tersedia sesuai pencarian / filter.
           </p>
           <button
@@ -185,7 +198,7 @@ export default function CatalogPage() {
               setSelectedBrand('all');
               setSearchQuery('');
             }}
-            className="text-xs font-semibold text-rose-600 hover:underline"
+            className="text-xs font-semibold text-rosebrand-600 hover:underline"
           >
             Reset filter pencarian
           </button>
@@ -195,9 +208,9 @@ export default function CatalogPage() {
           {Array.from(groupedData.entries()).map(([eventName, brandMap]) => (
             <section key={eventName} className="space-y-6">
               {/* Event Section Heading */}
-              <div className="flex items-center gap-3 border-b-2 border-slate-200 pb-2">
-                <span className="w-3 h-3 rounded-full bg-rose-600"></span>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <div className="flex items-center gap-3 border-b-2 border-cream-300 pb-2.5">
+                <span className="w-3.5 h-3.5 rounded-full bg-rosebrand-500 shadow-xs"></span>
+                <h2 className="text-xl sm:text-2xl font-black text-espresso-900 tracking-tight">
                   {eventName}
                 </h2>
                 <span className="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded uppercase">
@@ -210,10 +223,10 @@ export default function CatalogPage() {
                 {Array.from(brandMap.entries()).map(([brandName, brandItems]) => (
                   <div key={brandName} className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm sm:text-base font-extrabold text-slate-800 uppercase tracking-wide bg-slate-100 px-3 py-1 rounded-lg">
+                      <h3 className="text-sm sm:text-base font-extrabold text-espresso-900 uppercase tracking-wide bg-cream-200/70 border border-cream-300 px-3 py-1 rounded-lg">
                         Brand: {brandName}
                       </h3>
-                      <span className="text-xs text-slate-400 font-medium">({brandItems.length} produk)</span>
+                      <span className="text-xs text-espresso-700/60 font-medium">({brandItems.length} produk)</span>
                     </div>
 
                     {/* Product Cards Grid */}
@@ -221,11 +234,11 @@ export default function CatalogPage() {
                       {brandItems.map((item) => (
                         <div
                           key={item.id}
-                          className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                          className="bg-white rounded-xl border border-cream-200 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between"
                         >
                           {/* Image Box */}
                           <div
-                            className="relative aspect-[3/4] bg-slate-100 cursor-pointer overflow-hidden group"
+                            className="relative aspect-[3/4] bg-cream-100 cursor-pointer overflow-hidden group"
                             onClick={() => setPreviewImage(item.imageUrl)}
                           >
                             <img
@@ -237,12 +250,12 @@ export default function CatalogPage() {
                             {/* Stock Badge */}
                             <div className="absolute top-2 right-2">
                               <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded shadow ${
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded shadow-xs ${
                                   item.status === 'ready'
-                                    ? 'bg-emerald-500 text-white'
+                                    ? 'bg-emerald-600 text-white'
                                     : item.status === 'limited'
-                                    ? 'bg-amber-500 text-white'
-                                    : 'bg-slate-600 text-white'
+                                    ? 'bg-goldbrand-500 text-espresso-900'
+                                    : 'bg-espresso-700/70 text-white'
                                 }`}
                               >
                                 {item.status === 'ready' ? 'Ready' : item.status === 'limited' ? 'Sisa Dikit' : 'Habis'}
@@ -253,27 +266,27 @@ export default function CatalogPage() {
                           {/* Info & Price Breakdown */}
                           <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
                             <div>
-                              <h4 className="font-bold text-slate-900 text-xs sm:text-sm line-clamp-2 leading-snug">
+                              <h4 className="font-bold text-espresso-900 text-xs sm:text-sm line-clamp-2 leading-snug">
                                 {item.name}
                               </h4>
                               {item.notes && (
-                                <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">{item.notes}</p>
+                                <p className="text-[11px] text-espresso-700/70 mt-1 line-clamp-1">{item.notes}</p>
                               )}
                             </div>
 
                             {/* Price Breakdown */}
-                            <div className="pt-2 border-t border-slate-100 space-y-0.5">
-                              <div className="flex items-baseline justify-between text-slate-500 text-[10px]">
+                            <div className="pt-2 border-t border-cream-200 space-y-0.5">
+                              <div className="flex items-baseline justify-between text-espresso-700/70 text-[10px]">
                                 <span>Harga Barang:</span>
                                 <span className="font-mono font-medium">Rp {item.price.toLocaleString('id-ID')}</span>
                               </div>
-                              <div className="flex items-baseline justify-between text-rose-600 text-[10px]">
+                              <div className="flex items-baseline justify-between text-rosebrand-600 text-[10px]">
                                 <span>Fee Jastip:</span>
                                 <span className="font-mono font-medium">+Rp {item.fee.toLocaleString('id-ID')}</span>
                               </div>
-                              <div className="flex items-baseline justify-between pt-1 border-t border-slate-100 mt-1">
-                                <span className="text-[11px] font-bold text-slate-800">Total Harga:</span>
-                                <span className="text-sm font-black text-rose-600 font-mono">
+                              <div className="flex items-baseline justify-between pt-1 border-t border-cream-200 mt-1">
+                                <span className="text-[11px] font-bold text-espresso-900">Total:</span>
+                                <span className="text-sm font-black text-rosebrand-600 font-mono">
                                   Rp {(item.price + item.fee).toLocaleString('id-ID')}
                                 </span>
                               </div>
@@ -296,11 +309,11 @@ export default function CatalogPage() {
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
           onClick={() => setPreviewImage(null)}
         >
-          <div className="relative max-w-2xl max-h-[90vh] bg-white rounded-xl overflow-hidden p-2">
+          <div className="relative max-w-2xl max-h-[90vh] bg-white rounded-xl overflow-hidden p-2 border border-cream-200">
             <img src={previewImage} alt="Preview Foto" className="w-full h-full object-contain max-h-[85vh]" />
             <button
               onClick={() => setPreviewImage(null)}
-              className="absolute top-4 right-4 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold"
+              className="absolute top-4 right-4 bg-espresso-900/80 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold"
             >
               ✕
             </button>
