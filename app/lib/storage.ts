@@ -3,7 +3,7 @@ import { CatalogPageItem, EventMeta } from './types';
 const DB_NAME = 'jastipbun_db';
 const PAGE_STORE = 'catalog_pages';
 const EVENT_STORE = 'events';
-const DB_VERSION = 3;
+const DB_VERSION = 4; // increment to reset default data
 
 // ponytail: basic indexeddb wrapper.
 function openDB(): Promise<IDBDatabase> {
@@ -26,42 +26,9 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export const INITIAL_EVENTS: EventMeta[] = [
-  { name: 'Grand Indonesia Special Sale', active: true },
-  { name: 'Pop Mart Pop-Up Mall Kelapa Gading', active: true },
-  { name: 'Beauty Fair Senayan', active: false }
-];
-
-export const INITIAL_PAGES: CatalogPageItem[] = [
-  {
-    id: 'demo-p1',
-    brand: 'Uniqlo',
-    event: 'Grand Indonesia Special Sale',
-    pageNumber: 1,
-    imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'demo-p2',
-    brand: 'Uniqlo',
-    event: 'Grand Indonesia Special Sale',
-    pageNumber: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'demo-p3',
-    brand: 'Pop Mart',
-    event: 'Pop Mart Pop-Up Mall Kelapa Gading',
-    pageNumber: 1,
-    imageUrl: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'demo-p4',
-    brand: 'Sephora',
-    event: 'Beauty Fair Senayan',
-    pageNumber: 1,
-    imageUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80',
-  }
-];
+// Data awal kosong agar fresh
+export const INITIAL_EVENTS: EventMeta[] = [];
+export const INITIAL_PAGES: CatalogPageItem[] = [];
 
 export async function getEvents(): Promise<EventMeta[]> {
   try {
@@ -70,18 +37,11 @@ export async function getEvents(): Promise<EventMeta[]> {
       const tx = db.transaction(EVENT_STORE, 'readonly');
       const store = tx.objectStore(EVENT_STORE);
       const req = store.getAll();
-      req.onsuccess = () => {
-        const res = req.result as EventMeta[];
-        if (!res || res.length === 0) {
-          resolve(INITIAL_EVENTS);
-        } else {
-          resolve(res);
-        }
-      };
-      req.onerror = () => resolve(INITIAL_EVENTS);
+      req.onsuccess = () => resolve((req.result as EventMeta[]) || []);
+      req.onerror = () => resolve([]);
     });
   } catch {
-    return INITIAL_EVENTS;
+    return [];
   }
 }
 
@@ -110,18 +70,11 @@ export async function getAllPages(): Promise<CatalogPageItem[]> {
       const tx = db.transaction(PAGE_STORE, 'readonly');
       const store = tx.objectStore(PAGE_STORE);
       const req = store.getAll();
-      req.onsuccess = () => {
-        const res = req.result as CatalogPageItem[];
-        if (!res || res.length === 0) {
-          resolve(INITIAL_PAGES);
-        } else {
-          resolve(res);
-        }
-      };
-      req.onerror = () => resolve(INITIAL_PAGES);
+      req.onsuccess = () => resolve((req.result as CatalogPageItem[]) || []);
+      req.onerror = () => resolve([]);
     });
   } catch {
-    return INITIAL_PAGES;
+    return [];
   }
 }
 

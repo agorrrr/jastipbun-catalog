@@ -14,12 +14,11 @@ import {
   clearAllData
 } from '../lib/storage';
 
-const DEFAULT_PIN = 'admin123';
-
 export default function AdminPage() {
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [inputPin, setInputPin] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
   // Data state
@@ -48,20 +47,21 @@ export default function AdminPage() {
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (inputPin === DEFAULT_PIN) {
+    if (username.trim() === 'ibun' && password.trim() === 'ibuncantik') {
       sessionStorage.setItem('jastipbun_auth', 'true');
       setIsAuthenticated(true);
       setAuthError('');
       loadData();
     } else {
-      setAuthError('PIN Admin salah. Default: admin123');
+      setAuthError('Username atau password salah.');
     }
   }
 
   function handleLogout() {
     sessionStorage.removeItem('jastipbun_auth');
     setIsAuthenticated(false);
-    setInputPin('');
+    setUsername('');
+    setPassword('');
   }
 
   async function loadData() {
@@ -102,7 +102,7 @@ export default function AdminPage() {
 
     const pdfjsLib = (window as any).pdfjsLib;
     if (!pdfjsLib) {
-      alert('Library PDF.js belum siap. Muat ulang halaman.');
+      alert('Library PDF belum siap. Muat ulang halaman.');
       return;
     }
 
@@ -123,7 +123,6 @@ export default function AdminPage() {
         setProgressText(`Mengonversi halaman ${i} dari ${numPages}...`);
         const page = await pdf.getPage(i);
 
-        // Skala 1.4 menghasilkan teks tajam dan gambar jelas saat di-zoom
         const viewport = page.getViewport({ scale: 1.4 });
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -132,7 +131,6 @@ export default function AdminPage() {
 
         if (context) {
           await page.render({ canvasContext: context, viewport }).promise;
-          // Kompresi JPEG 0.82 (tajam tapi hemat memori ~150kb per halaman)
           const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
 
           extracted.push({
@@ -199,46 +197,57 @@ export default function AdminPage() {
   // If not authenticated, show Login Screen
   if (!isAuthenticated) {
     return (
-      <div className="max-w-md mx-auto my-12 bg-white p-6 rounded-2xl border border-cream-200 shadow-md">
+      <div className="max-w-md mx-auto my-14 bg-white p-7 rounded-2xl border border-cream-200 shadow-sm">
         <div className="text-center space-y-2 mb-6">
           <img
             src="/logo.jpg"
             alt="Logo Jastipbun"
-            className="w-16 h-16 rounded-full mx-auto border-2 border-rosebrand-500 shadow-xs"
+            className="w-16 h-16 rounded-full mx-auto border border-rosebrand-500/40 shadow-xs"
           />
-          <h1 className="text-xl font-bold text-espresso-900">Login Admin Jastipbun</h1>
+          <h1 className="text-xl font-bold text-espresso-900">Login Admin</h1>
           <p className="text-xs text-espresso-700/60">
-            Akses khusus pemilik untuk kelola status event & upload katalog PDF.
+            Akses khusus pengelola Jastipbun.
           </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-espresso-800 uppercase mb-1">
-              Masukkan PIN Admin
+            <label className="block text-xs font-semibold text-espresso-800 uppercase tracking-wider mb-1">
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full text-sm rounded-lg border border-cream-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-rosebrand-500 bg-cream-50/50"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-espresso-800 uppercase tracking-wider mb-1">
+              Password
             </label>
             <input
               type="password"
-              placeholder="Default: admin123"
-              value={inputPin}
-              onChange={(e) => setInputPin(e.target.value)}
-              className="w-full text-sm rounded-lg border border-cream-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-rosebrand-500 bg-cream-50/50"
-              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full text-sm rounded-lg border border-cream-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-rosebrand-500 bg-cream-50/50"
             />
-            {authError && <p className="text-xs text-rosebrand-600 mt-1 font-bold">{authError}</p>}
+            {authError && <p className="text-xs text-rosebrand-600 mt-2 font-semibold">{authError}</p>}
           </div>
 
           <button
             type="submit"
             className="w-full py-2.5 bg-rosebrand-500 hover:bg-rosebrand-600 text-white font-bold text-sm rounded-lg shadow-xs transition"
           >
-            Masuk Panel Admin →
+            Masuk →
           </button>
         </form>
 
         <div className="mt-6 pt-4 border-t border-cream-200 text-center">
-          <Link href="/" className="text-xs text-espresso-700/70 hover:text-espresso-900 font-semibold">
-            ← Kembali ke Katalog Publik
+          <Link href="/" className="text-xs text-espresso-700/70 hover:text-espresso-900 font-medium">
+            ← Kembali ke Katalog
           </Link>
         </div>
       </div>
@@ -250,11 +259,11 @@ export default function AdminPage() {
       {/* Admin Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cream-200 pb-4">
         <div className="flex items-center gap-3">
-          <img src="/logo.jpg" alt="Logo" className="w-10 h-10 rounded-full border border-rosebrand-500 shadow-xs" />
+          <img src="/logo.jpg" alt="Logo" className="w-10 h-10 rounded-full border border-rosebrand-500/50 shadow-xs" />
           <div>
             <h1 className="text-2xl font-bold text-espresso-900">Panel Admin Jastipbun</h1>
             <p className="text-xs text-espresso-700/70">
-              Upload katalog PDF per event & brand. Tanpa input harga manual.
+              Kelola status event aktif/nonaktif dan upload katalog PDF.
             </p>
           </div>
         </div>
@@ -280,7 +289,7 @@ export default function AdminPage() {
           <div>
             <h2 className="text-lg font-bold text-espresso-900">Status Event Hunting</h2>
             <p className="text-xs text-espresso-700/70">
-              Hanya event <strong>Aktif</strong> yang akan tampil ke pembeli.
+              Hanya event <strong>Aktif</strong> yang akan tampil di katalog publik.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -300,35 +309,39 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {events.map((ev) => (
-            <div
-              key={ev.name}
-              className={`p-3 rounded-lg border flex items-center justify-between transition ${
-                ev.active
-                  ? 'bg-emerald-50/70 border-emerald-300'
-                  : 'bg-cream-100/50 border-cream-200 opacity-60'
-              }`}
-            >
-              <div>
-                <p className="font-bold text-xs text-espresso-900">{ev.name}</p>
-                <span className={`text-[10px] font-bold ${ev.active ? 'text-emerald-700' : 'text-espresso-700/60'}`}>
-                  {ev.active ? '● Aktif' : '○ Nonaktif'}
-                </span>
-              </div>
-              <button
-                onClick={() => handleToggleEvent(ev.name, ev.active)}
-                className={`text-xs font-bold px-3 py-1 rounded-md transition ${
+        {events.length === 0 ? (
+          <p className="text-xs text-espresso-700/60 py-2">Belum ada event. Tambahkan event di atas.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {events.map((ev) => (
+              <div
+                key={ev.name}
+                className={`p-3 rounded-lg border flex items-center justify-between transition ${
                   ev.active
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    : 'bg-cream-300 text-espresso-800 hover:bg-cream-400'
+                    ? 'bg-emerald-50/60 border-emerald-300/80'
+                    : 'bg-cream-100/50 border-cream-200 opacity-60'
                 }`}
               >
-                {ev.active ? 'Nonaktifkan' : 'Aktifkan'}
-              </button>
-            </div>
-          ))}
-        </div>
+                <div>
+                  <p className="font-bold text-xs text-espresso-900">{ev.name}</p>
+                  <span className={`text-[10px] font-bold ${ev.active ? 'text-emerald-700' : 'text-espresso-700/60'}`}>
+                    {ev.active ? '● Aktif' : '○ Nonaktif'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleToggleEvent(ev.name, ev.active)}
+                  className={`text-xs font-bold px-3 py-1 rounded-md transition ${
+                    ev.active
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      : 'bg-cream-300 text-espresso-800 hover:bg-cream-400'
+                  }`}
+                >
+                  {ev.active ? 'Nonaktifkan' : 'Aktifkan'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* PDF Upload Section */}
@@ -343,11 +356,15 @@ export default function AdminPage() {
               onChange={(e) => setSelectedEventName(e.target.value)}
               className="w-full text-xs rounded-lg border border-cream-300 px-3 py-2.5 bg-cream-50/50 focus:outline-none focus:ring-2 focus:ring-rosebrand-500 font-semibold"
             >
-              {events.map((e) => (
-                <option key={e.name} value={e.name}>
-                  {e.name} {e.active ? '(Aktif)' : '(Nonaktif)'}
-                </option>
-              ))}
+              {events.length === 0 ? (
+                <option value="">(Belum ada event - Buat di atas)</option>
+              ) : (
+                events.map((e) => (
+                  <option key={e.name} value={e.name}>
+                    {e.name} {e.active ? '(Aktif)' : '(Nonaktif)'}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
