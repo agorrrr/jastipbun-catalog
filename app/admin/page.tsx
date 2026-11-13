@@ -11,7 +11,8 @@ import {
   saveManyPages,
   deletePage,
   deleteBrandInEvent,
-  clearAllData
+  clearAllData,
+  uploadImageToBlob,
 } from '../lib/storage';
 
 export default function AdminPage() {
@@ -35,6 +36,7 @@ export default function AdminPage() {
 
   // Upload & processing states
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [progressText, setProgressText] = useState('');
   const [draftPages, setDraftPages] = useState<CatalogPageItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,7 +104,6 @@ export default function AdminPage() {
     setSelectedEventName(clean);
   }
 
-  // Quick action: Click "+ Tambah Halaman" on existing brand card
   function handleQuickAddToBrand(eventName: string, targetBrand: string) {
     setSelectedEventName(eventName);
     setBrandMode('existing');
@@ -110,17 +111,14 @@ export default function AdminPage() {
     if (uploadSectionRef.current) {
       uploadSectionRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-    // trigger file picker directly
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   }
 
-  // Effective brand name based on mode
   const currentBrand =
     brandMode === 'existing' ? selectedExistingBrand.trim() : newBrandName.trim();
 
-  // Compress an image file to lightweight JPEG DataURL
   function compressImageFile(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -166,7 +164,6 @@ export default function AdminPage() {
       return;
     }
 
-    // Hitung nomor halaman lanjutan untuk brand ini
     const existingCount = pages.filter(
       (p) => p.event === targetEvent && p.brand.toLowerCase() === currentBrand.toLowerCase()
     ).length;
@@ -182,7 +179,6 @@ export default function AdminPage() {
         const file = files[fIdx];
 
         if (file.type === 'application/pdf') {
-          // Process PDF
           const pdfjsLib = (window as any).pdfjsLib;
           if (!pdfjsLib) {
             alert('Library PDF belum siap. Muat ulang halaman.');
@@ -220,7 +216,6 @@ export default function AdminPage() {
             }
           }
         } else if (file.type.startsWith('image/')) {
-          // Process Direct Image (JPG, PNG, WebP)
           setProgressText(`Memproses foto (${fIdx + 1} dari ${files.length})...`);
           const dataUrl = await compressImageFile(file);
           extracted.push({
@@ -248,12 +243,43 @@ export default function AdminPage() {
     setDraftPages(draftPages.filter((_, i) => i !== index));
   }
 
+  // Upload to Vercel Blob cloud so it appears everywhere across all devices
   async function saveAllDrafts() {
     if (draftPages.length === 0) return;
-    await saveManyPages(draftPages);
-    setDraftPages([]);
-    await loadData();
-    alert(`${draftPages.length} halaman/foto berhasil ditambahkan ke katalog ${currentBrand}!`);
+
+    setIsSavingCloud(true);
+    try {
+      const uploadedPages: CatalogPageItem[] = [];
+
+      for (let i = 0; i < draftPages.length; i++) {
+        const item = draftPages[i];
+        setProgressText(`Mengunggah ke Cloud CDN (${i + 1} dari ${draftPages.length})...`);
+
+        // Upload image to Vercel Blob
+        const cloudUrl = await uploadImageToBlob(
+          item.imageUrl,
+          `${item.brand}-p${item.pageNumber}.jpg`
+        );
+
+        uploadedPages.push({
+          ...item,
+          imageUrl: cloudUrl,
+        });
+      }
+
+      setProgressText('Menyimpan ke katalog global...');
+      await saveManyPages(uploadedPages);
+
+      setDraftPages([]);
+      await loadData();
+      alert(`Berhasil! ${uploadedPages.length} halaman telah tersimpan di Cloud dan langsung tayang di semua HP/PC.`);
+    } catch (err: any) {
+      console.error(err);
+      alert('Gagal menyimpan ke cloud: ' + err.message);
+    } finally {
+      setIsSavingCloud(false);
+      setProgressText('');
+    }
   }
 
   async function handleDeleteSinglePage(id: string) {
@@ -269,7 +295,7 @@ export default function AdminPage() {
   }
 
   async function handleClearAll() {
-    if (!confirm('Kosongkan semua data katalog dan event?')) return;
+    if (!confirm('Kosongkan semua data katalog dan event di cloud?')) return;
     await clearAllData();
     await loadData();
   }
@@ -353,7 +379,7 @@ export default function AdminPage() {
           <div>
             <h1 className="text-2xl font-bold text-espresso-900">Panel Admin Jastipbun</h1>
             <p className="text-xs text-espresso-700/70">
-              Kelola event aktif/nonaktif dan tambah foto/katalog ke brand baru maupun brand eksis.
+              Penyimpanan Cloud Vercel Blob (Semua data tersinkronisasi otomatis ke seluruh HP dan pembeli).
             </p>
           </div>
         </div>
@@ -534,7 +560,7 @@ export default function AdminPage() {
             type="file"
             multiple
             accept="application/pdf,image/png,image/jpeg,image/webp"
-            disabled={isProcessing}
+            disabled={isProcessing || isSavingCloud}
             onChange={handleFilesUpload}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
           />
@@ -543,10 +569,10 @@ export default function AdminPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <p className="text-sm font-bold text-espresso-900">
-              {isProcessing ? progressText : 'Klik atau seret file PDF / Foto ke sini'}
+              {isProcessing || isSavingCloud ? progressText : 'Klik atau seret file PDF / Foto ke sini'}
             </p>
             <p className="text-xs text-espresso-700/60">
-              Mendukung file <strong>PDF</strong> atau <strong>Foto langsung (JPG, PNG, WebP)</strong>. Nomor halaman otomatis melanjutkan yang sudah ada.
+              Mendukung file <strong>PDF</strong> atau <strong>Foto langsung (JPG, PNG, WebP)</strong>.
             </p>
             {currentBrand && (
               <p className="text-[11px] font-bold text-rosebrand-600">
@@ -566,14 +592,15 @@ export default function AdminPage() {
                 Review Halaman / Foto Tambahan ({draftPages.length} Item)
               </h2>
               <p className="text-xs text-espresso-700/70">
-                Brand: <strong>{currentBrand}</strong> | Event: <strong>{selectedEventName}</strong>. Halaman akan otomatis bersambung di urutan berikutnya.
+                Brand: <strong>{currentBrand}</strong> | Event: <strong>{selectedEventName}</strong>. Klik Simpan untuk mengunggah ke Cloud.
               </p>
             </div>
             <button
               onClick={saveAllDrafts}
-              className="px-5 py-2.5 bg-rosebrand-500 hover:bg-rosebrand-600 text-white font-bold text-sm rounded-lg shadow-xs transition"
+              disabled={isSavingCloud}
+              className="px-5 py-2.5 bg-rosebrand-500 hover:bg-rosebrand-600 disabled:opacity-50 text-white font-bold text-sm rounded-lg shadow-xs transition"
             >
-              Simpan Semua ke Katalog Publik →
+              {isSavingCloud ? progressText : 'Simpan Semua ke Cloud Publik →'}
             </button>
           </div>
 
@@ -591,6 +618,7 @@ export default function AdminPage() {
                   </span>
                   <button
                     onClick={() => removeDraftPage(idx)}
+                    disabled={isSavingCloud}
                     title="Hapus foto"
                     className="absolute top-1.5 right-1.5 bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold hover:bg-red-700 shadow-xs"
                   >
@@ -607,8 +635,8 @@ export default function AdminPage() {
       <div className="bg-white rounded-xl border border-cream-200 shadow-xs p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-espresso-900">Daftar Katalog Brand Aktif</h2>
-            <p className="text-xs text-espresso-700/70">Klik &quot;+ Tambah Foto&quot; pada brand untuk menyambung halaman katalog.</p>
+            <h2 className="text-lg font-bold text-espresso-900">Daftar Katalog Brand Aktif (Cloud)</h2>
+            <p className="text-xs text-espresso-700/70">Tersinkronisasi realtime di cloud Vercel Blob untuk seluruh pengunjung.</p>
           </div>
           <button
             onClick={handleClearAll}
@@ -619,9 +647,9 @@ export default function AdminPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-espresso-700/60 py-6 text-center">Memuat katalog...</p>
+          <p className="text-sm text-espresso-700/60 py-6 text-center">Memuat katalog dari cloud...</p>
         ) : Object.keys(catalogGroups).length === 0 ? (
-          <p className="text-sm text-espresso-700/60 py-6 text-center">Belum ada katalog yang diunggah.</p>
+          <p className="text-sm text-espresso-700/60 py-6 text-center">Belum ada katalog yang diunggah ke cloud.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {Object.entries(catalogGroups).map(([key, grp]) => (

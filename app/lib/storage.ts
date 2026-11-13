@@ -1,124 +1,104 @@
 import { CatalogPageItem, EventMeta } from './types';
 
-const DB_NAME = 'jastipbun_db';
-const PAGE_STORE = 'catalog_pages';
-const EVENT_STORE = 'events';
-const DB_VERSION = 4; // increment to reset default data
-
-// ponytail: basic indexeddb wrapper.
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === 'undefined') {
-      return reject(new Error('window undefined'));
-    }
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(PAGE_STORE)) {
-        db.createObjectStore(PAGE_STORE, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(EVENT_STORE)) {
-        db.createObjectStore(EVENT_STORE, { keyPath: 'name' });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-// Data awal kosong agar fresh
 export const INITIAL_EVENTS: EventMeta[] = [];
 export const INITIAL_PAGES: CatalogPageItem[] = [];
 
+// Fetch current cloud state from Vercel Blob API
 export async function getEvents(): Promise<EventMeta[]> {
   try {
-    const db = await openDB();
-    return new Promise((resolve) => {
-      const tx = db.transaction(EVENT_STORE, 'readonly');
-      const store = tx.objectStore(EVENT_STORE);
-      const req = store.getAll();
-      req.onsuccess = () => resolve((req.result as EventMeta[]) || []);
-      req.onerror = () => resolve([]);
-    });
-  } catch {
-    return [];
+    const res = await fetch('/api/catalog', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      return data.events || [];
+    }
+  } catch (err) {
+    console.error('getEvents error:', err);
   }
-}
-
-export async function saveEvent(ev: EventMeta): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(EVENT_STORE, 'readwrite');
-    const store = tx.objectStore(EVENT_STORE);
-    const req = store.put(ev);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-}
-
-export async function toggleEventActive(name: string, active: boolean): Promise<void> {
-  const events = await getEvents();
-  const existing = events.find(e => e.name === name) || { name, active: true };
-  existing.active = active;
-  await saveEvent(existing);
+  return [];
 }
 
 export async function getAllPages(): Promise<CatalogPageItem[]> {
   try {
-    const db = await openDB();
-    return new Promise((resolve) => {
-      const tx = db.transaction(PAGE_STORE, 'readonly');
-      const store = tx.objectStore(PAGE_STORE);
-      const req = store.getAll();
-      req.onsuccess = () => resolve((req.result as CatalogPageItem[]) || []);
-      req.onerror = () => resolve([]);
-    });
-  } catch {
-    return [];
+    const res = await fetch('/api/catalog', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      return data.pages || [];
+    }
+  } catch (err) {
+    console.error('getAllPages error:', err);
   }
+  return [];
+}
+
+// Upload image to Vercel Blob and return public CDN URL
+export async function uploadImageToBlob(dataUrl: string, filename: string): Promise<string> {
+  // If already a cloud URL, return directly
+  if (!dataUrl.startsWith('data:image/')) {
+    return dataUrl;
+  }
+
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename, dataUrl }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Failed to upload image to cloud');
+  }
+
+  const data = await res.json();
+  return data.url;
+}
+
+export async function saveEvent(ev: EventMeta): Promise<void> {
+  await fetch('/api/catalog', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'save_event', payload: ev }),
+  });
+}
+
+export async function toggleEventActive(name: string, active: boolean): Promise<void> {
+  await fetch('/api/catalog', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'toggle_event', payload: { name, active } }),
+  });
 }
 
 export async function saveManyPages(pages: CatalogPageItem[]): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(PAGE_STORE, 'readwrite');
-    const store = tx.objectStore(PAGE_STORE);
-    pages.forEach(p => store.put(p));
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+  await fetch('/api/catalog', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'save_pages', payload: pages }),
   });
 }
 
 export async function deletePage(id: string): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(PAGE_STORE, 'readwrite');
-    const store = tx.objectStore(PAGE_STORE);
-    const req = store.delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
+  await fetch('/api/catalog', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete_page', payload: { id } }),
   });
 }
 
 export async function deleteBrandInEvent(eventName: string, brandName: string): Promise<void> {
-  const all = await getAllPages();
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(PAGE_STORE, 'readwrite');
-    const store = tx.objectStore(PAGE_STORE);
-    all.filter(p => p.event === eventName && p.brand === brandName).forEach(p => store.delete(p.id));
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+  await fetch('/api/catalog', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'delete_brand',
+      payload: { eventName, brandName },
+    }),
   });
 }
 
 export async function clearAllData(): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([PAGE_STORE, EVENT_STORE], 'readwrite');
-    tx.objectStore(PAGE_STORE).clear();
-    tx.objectStore(EVENT_STORE).clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+  await fetch('/api/catalog', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'clear_all' }),
   });
 }
