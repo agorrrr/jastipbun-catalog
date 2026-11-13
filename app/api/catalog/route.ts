@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { put, list } from '@vercel/blob';
 import { CatalogPageItem, EventMeta } from '../../lib/types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface CatalogDatabase {
   events: EventMeta[];
   pages: CatalogPageItem[];
@@ -13,8 +16,9 @@ async function getDatabase(): Promise<CatalogDatabase> {
   try {
     const { blobs } = await list({ prefix: DATA_FILENAME, limit: 1 });
     if (blobs.length > 0) {
-      // Fetch fresh json directly from blob url (cache: no-store)
-      const res = await fetch(blobs[0].url, { cache: 'no-store' });
+      // Bypass Vercel Blob CDN 30-day cache with timestamp query param
+      const freshUrl = `${blobs[0].url}?t=${Date.now()}`;
+      const res = await fetch(freshUrl, { cache: 'no-store' });
       if (res.ok) {
         return (await res.json()) as CatalogDatabase;
       }

@@ -6,7 +6,7 @@ export const INITIAL_PAGES: CatalogPageItem[] = [];
 // Fetch current cloud state from Vercel Blob API
 export async function getEvents(): Promise<EventMeta[]> {
   try {
-    const res = await fetch('/api/catalog', { cache: 'no-store' });
+    const res = await fetch(`/api/catalog?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       return data.events || [];
@@ -19,7 +19,7 @@ export async function getEvents(): Promise<EventMeta[]> {
 
 export async function getAllPages(): Promise<CatalogPageItem[]> {
   try {
-    const res = await fetch('/api/catalog', { cache: 'no-store' });
+    const res = await fetch(`/api/catalog?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       return data.pages || [];
