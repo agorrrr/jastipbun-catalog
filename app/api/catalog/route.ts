@@ -29,6 +29,7 @@ async function saveDatabase(data: CatalogDatabase): Promise<void> {
   await put(DATA_FILENAME, JSON.stringify(data), {
     access: 'public',
     addRandomSuffix: false,
+    allowOverwrite: true,
     contentType: 'application/json',
   });
 }
