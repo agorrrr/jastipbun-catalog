@@ -60,7 +60,7 @@ export default function RootLayout({
                 href="/admin"
                 className="px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-semibold bg-cream-200 text-espresso-800 hover:bg-cream-300 transition border border-cream-300"
               >
-                Admin
+                Login
               </Link>
             </nav>
           </div>

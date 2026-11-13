@@ -248,14 +248,8 @@ export default function CatalogPage() {
             Belum ada katalog aktif yang tersedia.
           </p>
           <p className="text-xs text-espresso-700/60">
-            Admin dapat menambahkan event dan katalog dari menu admin.
+            Nantikan update katalog terbaru segera.
           </p>
-          <Link
-            href="/admin"
-            className="inline-block mt-3 text-xs font-bold text-rosebrand-600 hover:underline"
-          >
-            Buka Menu Admin →
-          </Link>
         </div>
       ) : (
         <div className="space-y-8 sm:space-y-10">

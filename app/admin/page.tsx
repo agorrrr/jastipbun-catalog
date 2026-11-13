@@ -320,7 +320,7 @@ export default function AdminPage() {
             alt="Logo Jastipbun"
             className="w-16 h-16 rounded-full mx-auto border border-rosebrand-500/40 shadow-xs"
           />
-          <h1 className="text-xl font-bold text-espresso-900">Login Admin</h1>
+          <h1 className="text-xl font-bold text-espresso-900">Login</h1>
           <p className="text-xs text-espresso-700/60">
             Akses khusus pengelola Jastipbun.
           </p>
@@ -377,7 +377,7 @@ export default function AdminPage() {
         <div className="flex items-center gap-3">
           <img src="/logo.jpg" alt="Logo" className="w-10 h-10 rounded-full border border-rosebrand-500/50 shadow-xs" />
           <div>
-            <h1 className="text-2xl font-bold text-espresso-900">Panel Admin Jastipbun</h1>
+            <h1 className="text-2xl font-bold text-espresso-900">Panel Jastipbun</h1>
             <p className="text-xs text-espresso-700/70">
               Penyimpanan Cloud Vercel Blob (Semua data tersinkronisasi otomatis ke seluruh HP dan pembeli).
             </p>
@@ -394,7 +394,7 @@ export default function AdminPage() {
             onClick={handleLogout}
             className="text-xs font-bold px-3 py-1.5 rounded-lg border border-cream-300 hover:bg-cream-200 text-espresso-800"
           >
-            Keluar Admin
+            Keluar
           </button>
         </div>
       </div>
